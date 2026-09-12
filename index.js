@@ -219,7 +219,7 @@ app.get('/api/applications/me', async (req, res) => {
       application.status === 'pending' &&
       application.birthYear >= 2004 &&
       application.birthYear <= 2008 &&
-      Date.now() - new Date(application.createdAt).getTime() >= 60 * 1000
+      Date.now() - new Date(application.createdAt).getTime() >= 30 * 1000
     ) {
       await application.update({
         status: 'approved',
