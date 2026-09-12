@@ -211,21 +211,35 @@ app.get('/api/applications/me', async (req, res) => {
 
     const application = await Application.findOne({
       where: { openid },
-      order: [['createdAt', 'DESC']],
-      attributes: [
-        'applicationNo',
-        'school',
-        'status',
-        'reviewNote',
-        'createdAt',
-        'updatedAt',
-        'redeemedAt'
-      ]
+      order: [['createdAt', 'DESC']]
     })
+
+    if (
+      application &&
+      application.status === 'pending' &&
+      application.birthYear >= 2004 &&
+      application.birthYear <= 2008 &&
+      Date.now() - new Date(application.createdAt).getTime() >= 60 * 1000
+    ) {
+      await application.update({
+        status: 'approved',
+        reviewNote: '系统资格校验通过'
+      })
+    }
 
     return res.send({
       code: 0,
       data: application
+        ? {
+            applicationNo: application.applicationNo,
+            school: application.school,
+            status: application.status,
+            reviewNote: application.reviewNote,
+            createdAt: application.createdAt,
+            updatedAt: application.updatedAt,
+            redeemedAt: application.redeemedAt
+          }
+        : null
     })
   } catch (error) {
     console.error('查询申请失败：', error.message)
