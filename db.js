@@ -44,24 +44,24 @@ const Application = sequelize.define(
       allowNull: false
     },
 
+    school: {
+      type: DataTypes.STRING(100),
+      allowNull: false
+    },
+
     idCardCiphertext: {
       type: DataTypes.TEXT,
-      allowNull: false
+      allowNull: true
     },
 
     idCardLast4: {
       type: DataTypes.STRING(4),
-      allowNull: false
+      allowNull: true
     },
 
     birthYear: {
       type: DataTypes.INTEGER,
-      allowNull: false
-    },
-
-    school: {
-      type: DataTypes.STRING(100),
-      allowNull: false
+      allowNull: true
     },
 
     screenshotPath: {

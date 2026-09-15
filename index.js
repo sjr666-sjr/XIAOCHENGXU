@@ -28,30 +28,6 @@ function createApplicationNo() {
   return `SQ${dateText}${randomText}`
 }
 
-function encryptIdCard(value) {
-  const keyText = process.env.DATA_ENCRYPTION_KEY || ''
-
-  if (!/^[0-9a-fA-F]{64}$/.test(keyText)) {
-    throw new Error('DATA_ENCRYPTION_KEY配置错误')
-  }
-
-  const key = Buffer.from(keyText, 'hex')
-  const iv = crypto.randomBytes(12)
-  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv)
-
-  const encrypted = Buffer.concat([
-    cipher.update(value, 'utf8'),
-    cipher.final()
-  ])
-
-  const authTag = cipher.getAuthTag()
-
-  return [
-    iv.toString('hex'),
-    authTag.toString('hex'),
-    encrypted.toString('hex')
-  ].join('.')
-}
 
 app.get('/', (req, res) => {
   res.send({
@@ -81,18 +57,14 @@ app.post('/api/applications', async (req, res) => {
     const {
       name = '',
       phone = '',
-      idCard = '',
       school = '',
-      screenshotPath = '',
       noLicenseDeclared = false,
       privacyAgreed = false
     } = req.body || {}
 
     const cleanName = String(name).trim()
     const cleanPhone = String(phone).trim()
-    const cleanIdCard = String(idCard).trim()
     const cleanSchool = String(school).trim()
-    const cleanScreenshotPath = String(screenshotPath).trim()
 
     if (!cleanName || cleanName.length > 50) {
       return res.status(400).send({
@@ -108,33 +80,10 @@ app.post('/api/applications', async (req, res) => {
       })
     }
 
-    if (!/^\d{17}[\dXx]$/.test(cleanIdCard)) {
-      return res.status(400).send({
-        code: 400,
-        message: '身份证号必须为18位'
-      })
-    }
-
-    const birthYear = Number(cleanIdCard.slice(6, 10))
-
-    if (birthYear < 2004 || birthYear > 2008) {
-      return res.status(400).send({
-        code: 400,
-        message: '出生年份必须为2004至2008年'
-      })
-    }
-
     if (!cleanSchool || cleanSchool.length > 100) {
       return res.status(400).send({
         code: 400,
         message: '学校名称格式不正确'
-      })
-    }
-
-    if (!cleanScreenshotPath) {
-      return res.status(400).send({
-        code: 400,
-        message: '请上传学籍凭证'
       })
     }
 
@@ -171,11 +120,7 @@ app.post('/api/applications', async (req, res) => {
       openid,
       name: cleanName,
       phone: cleanPhone,
-      idCardCiphertext: encryptIdCard(cleanIdCard),
-      idCardLast4: cleanIdCard.slice(-4),
-      birthYear,
       school: cleanSchool,
-      screenshotPath: cleanScreenshotPath,
       status: 'pending'
     })
 
@@ -217,8 +162,6 @@ app.get('/api/applications/me', async (req, res) => {
     if (
       application &&
       application.status === 'pending' &&
-      application.birthYear >= 2004 &&
-      application.birthYear <= 2008 &&
       Date.now() - new Date(application.createdAt).getTime() >= 30 * 1000
     ) {
       await application.update({
